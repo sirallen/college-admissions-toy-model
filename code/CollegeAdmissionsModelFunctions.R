@@ -1,7 +1,9 @@
 add_p_acceptance_beliefs <- function(colleges, type, alpha) {
   colleges %>%
     mutate(
-      p_acceptance_belief = pnorm(qnorm(1 - cumsum(capacity) / sum(capacity), mean = 0, sd = sd_types), mean = type, sd = sd_e, lower.tail = FALSE),
+      p_acceptance_belief =
+        pnorm(qnorm(1 - cumsum(capacity) / sum(capacity), mean = 0, sd = sqrt(sd_types^2 + sd_e^2)),
+              mean = type, sd = sd_e, lower.tail = FALSE),
       p_acceptance_belief_shrink = (1 - alpha) * p_acceptance_belief + alpha * public_acceptance_rate
     )
 }
