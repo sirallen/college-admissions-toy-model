@@ -6,19 +6,20 @@ library(tidyr)
 theme_set(theme_minimal())
 
 source('CollegeAdmissionsModelFunctions.R')
+#load('CollegeAdmissionsModelData.Rda')
 
-K <- 50 # num colleges
-N <- 100 * K # num students
-sd_types <- 1
-sd_e <- .1
-app_cost <- 3
-
-set.seed(99)
+K <- 50           # num colleges
+N <- 100 * K      # num students
+sd_types <- 1     # sd(W_i)
+sd_e <- .1        # sd(eps_i)
+app_cost <- 3     # c
+i_1 <- .05        # I_1
+i_K <- 1          # I_K
 
 colleges <- data_frame(
   college_rank = seq_len(K),
   capacity = rep(100, K),
-  public_acceptance_rate = seq(.05, .8, length.out = K))
+  public_acceptance_rate = seq(i_1, i_K, length.out = K))
 
 colleges %>%
   select(college_rank, public_acceptance_rate) %>%
@@ -33,6 +34,7 @@ colleges %>%
     geom_line() +
     ggsave('plots/UtilityFunctions.png', dev = 'png', width = 8, height = 4, scale = 1.4)
 
+set.seed(99)
 students <- data_frame(
   type = rnorm(N, mean = 0, sd = sd_types),
   type_signal = type + rnorm(N, mean = 0, sd = sd_e),
@@ -96,6 +98,9 @@ for (j in seq_len(nrow(parameter_grid))) {
   parameter_grid$data[j] <- list(all_applicants_choice_sets)
 }
 
+rm(c, alpha, beta, gamma, j)
+rm(all_applicants_choice_sets)
+
 i <- 1
 
 parameter_grid <- parameter_grid %>%
@@ -122,12 +127,12 @@ lapply(unique(parameter_grid$gamma), function(g) {
       mutate_at('alpha', ~ paste0('alpha=', .)) %>%
       mutate_at('app_cost', ~ paste0('c=', .)) %>%
       ggplot(aes(x = college_rank, y = type_percentile, fill = num_applications)) +
-        geom_tile() +
-        facet_grid(alpha ~ app_cost) +
-        ggsave(paste0('plots/NumApplicationsByCollegeRankAndTypePercentile_',
-                      'gamma=', g,
-                      '_beta=', sprintf(b, fmt = '%#.2f'), '.png'),
-               dev = 'png', width = 10, height = 10, scale = 1)
+      geom_tile() +
+      facet_grid(alpha ~ app_cost) +
+      ggsave(paste0('plots/NumApplicationsByCollegeRankAndTypePercentile_',
+                    'gamma=', g,
+                    '_beta=', sprintf(b, fmt = '%#.2f'), '.png'),
+             dev = 'png', width = 10, height = 10, scale = 1)
   })
 })
 
@@ -140,12 +145,12 @@ lapply(unique(parameter_grid$gamma), function(g) {
       mutate_at('alpha', ~ paste0('alpha=', .)) %>%
       mutate_at('app_cost', ~ paste0('c=', .)) %>%
       ggplot(aes(x = college_rank, y = type_percentile, fill = num_admits)) +
-        geom_tile() +
-        facet_grid(alpha ~ app_cost) +
-        ggsave(paste0('plots/NumAdmitsByCollegeRankAndTypePercentile_',
-                      'gamma=', g,
-                      '_beta=', sprintf(b, fmt = '%#.2f'), '.png'),
-               dev = 'png', width = 10, height = 10, scale = 1)
+      geom_tile() +
+      facet_grid(alpha ~ app_cost) +
+      ggsave(paste0('plots/NumAdmitsByCollegeRankAndTypePercentile_',
+                    'gamma=', g,
+                    '_beta=', sprintf(b, fmt = '%#.2f'), '.png'),
+             dev = 'png', width = 10, height = 10, scale = 1)
   })
 })
 
@@ -157,11 +162,11 @@ lapply(unique(parameter_grid$gamma), function(g) {
     mutate_at('beta', ~ paste0('beta=', .)) %>%
     mutate_at('app_cost', ~ paste0('c=', .)) %>%
     ggplot(aes(x = type_percentile, y = avg_num_applications_per_student)) +
-      geom_line(aes(col = factor(alpha))) +
-      facet_grid(app_cost ~ beta) +
-      theme(panel.border = element_rect(color = 'black', fill = NA)) +
-      ggsave(paste0('plots/AvgNumApplicationsPerStudentByTypePercentile_gamma=', g, '.png'),
-             dev = 'png', width = 10, height = 10, scale = 1)
+    geom_line(aes(col = factor(alpha))) +
+    facet_grid(app_cost ~ beta) +
+    theme(panel.border = element_rect(color = 'black', fill = NA)) +
+    ggsave(paste0('plots/AvgNumApplicationsPerStudentByTypePercentile_gamma=', g, '.png'),
+           dev = 'png', width = 10, height = 10, scale = 1)
 })
 
 lapply(unique(parameter_grid$gamma), function(g) {
@@ -172,13 +177,31 @@ lapply(unique(parameter_grid$gamma), function(g) {
     mutate_at('beta', ~ paste0('beta=', .)) %>%
     mutate_at('app_cost', ~ paste0('c=', .)) %>%
     ggplot(aes(x = college_rank)) +
-      geom_line(aes(y = admit_rate, lty = 'admit_rate', col = factor(alpha))) +
-      #geom_line(aes(y = yield, lty = 'yield_rate', col = factor(alpha))) +
-      geom_line(data = colleges, aes(y = public_acceptance_rate, lty = 'public_acceptance_rate'), col = 'red') +
-      facet_grid(app_cost ~ beta) +
-      theme(panel.border = element_rect(color = 'black', fill = NA)) +
-      ggsave(paste0('plots/AdmitAndYieldRatesByCollegeRank_gamma=', g, '.png'),
-             dev = 'png', width = 10, height = 10, scale = 1)
+    geom_line(aes(y = admit_rate, lty = 'admit_rate', col = factor(alpha))) +
+    geom_line(data = colleges, aes(y = public_acceptance_rate, lty = 'public_acceptance_rate'), col = 'red') +
+    facet_grid(app_cost ~ beta) +
+    guides(linetype = FALSE) +
+    theme(panel.border = element_rect(color = 'black', fill = NA)) +
+    ggsave(paste0('plots/AdmitRatesByCollegeRank_gamma=', g, '.png'),
+           dev = 'png', width = 10, height = 10, scale = 1)
+})
+
+lapply(unique(parameter_grid$gamma), function(g) {
+  parameter_grid %>%
+    select(-data, -summary, -summary1, -summary2) %>%
+    unnest(summary3) %>%
+    filter(gamma == g) %>%
+    mutate_at('beta', ~ paste0('beta=', .)) %>%
+    mutate_at('app_cost', ~ paste0('c=', .)) %>%
+    ggplot(aes(x = college_rank)) +
+    geom_line(aes(y = yield, lty = 'yield', col = factor(alpha))) +
+    geom_line(data = colleges, aes(y = public_acceptance_rate, lty = 'public_acceptance_rate'), col = 'red') +
+    facet_grid(app_cost ~ beta) +
+    scale_linetype_manual(values = c(yield = 1, public_acceptance_rate = 3)) +
+    guides(linetype = FALSE) +
+    theme(panel.border = element_rect(color = 'black', fill = NA)) +
+    ggsave(paste0('plots/YieldsByCollegeRank_gamma=', g, '.png'),
+           dev = 'png', width = 10, height = 10, scale = 1)
 })
 
 lapply(unique(parameter_grid$gamma), function(g) {
